@@ -32,7 +32,7 @@ router
 			{ _id: req.body.category },
 			function (err, foundCategory) {
 				if (foundCategory) {
-					const newProduct = new Product({
+					let newProduct = new Product({
 						name: req.body.name,
 						description: req.body.description,
 						image: req.body.image,

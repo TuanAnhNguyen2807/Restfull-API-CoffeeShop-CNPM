@@ -22,7 +22,7 @@ router
 		});
 	})
 	.post(function (req, res) {
-		const newCategory = new Category({
+		let newCategory = new Category({
 			name: req.body.name,
 		});
 		newCategory.save(function (err) {
