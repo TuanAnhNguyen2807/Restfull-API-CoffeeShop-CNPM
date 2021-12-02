@@ -1,69 +1,69 @@
 const express = require("express");
 const router = express.Router();
-const Customer = require("../models/customer");
+const Employee = require("../models/employee");
 const bcrypt = require("bcrypt");
 var jwt = require("jsonwebtoken");
 
 router
 	.route("/")
 	.get(function (req, res) {
-		Customer.find(function (err, foundCustomerList) {
+		Employee.find(function (err, foundEmployeeList) {
 			if (!err) {
-				if (foundCustomerList.length === 0) {
+				if (foundEmployeeList.length === 0) {
 					return res.status(200).json({
-						message: "Empty Customer",
+						message: "Empty Employee",
 					});
 				}
-				return res.send(foundCustomerList);
+				return res.send(foundEmployeeList);
 			} else {
 				return res.status(500).json({
 					success: false,
 					error: err,
 				});
 			}
-		}).select("-password");
+		});
 	})
 	.post(function (req, res) {
 		let salt = parseInt(process.env.SALT_ROUND);
 		let hashPassWord = bcrypt.hashSync(req.body.password, salt);
-		let newCustomer = new Customer({
+		let newEmployee = new Employee({
 			name: req.body.name,
 			email: req.body.email,
 			password: hashPassWord,
 			phone: req.body.phone,
 			address: req.body.address,
+			salary: req.body.salary,
 		});
-		newCustomer.save(function (err) {
+		newEmployee.save(function (err) {
 			if (!err) {
 				return res
 					.status(200)
-					.send("Successfully added a new Customer.");
+					.send("Successfully added a new Employee.");
 			} else {
 				return res.status(400).json({
 					success: false,
 					error: err.message,
-					status: "A Customer cannot be created",
+					status: "A Employee cannot be created",
 				});
 			}
 		});
 	});
-
 router
 	.route("/:id")
 	.get(function (req, res) {
-		Customer.findOne({ _id: req.params.id }, function (err, foundCustomer) {
-			if (foundCustomer) {
-				return res.send(foundCustomer);
+		Employee.findOne({ _id: req.params.id }, function (err, foundEmployee) {
+			if (foundEmployee) {
+				return res.send(foundEmployee);
 			}
 			return res.status(404).json({
 				success: false,
-				message: "A Customer with the given ID was not found",
+				message: "A Employee with the given ID was not found",
 			});
-		}).select("-password");
+		});
 	})
 	.put(async function (req, res) {
-		const customerfound = await Customer.findById(req.params.id);
-		Customer.findOneAndUpdate(
+		const employeefound = await Employee.findById(req.params.id);
+		Employee.findOneAndUpdate(
 			{ _id: req.params.id },
 			{
 				name: req.body.name,
@@ -73,46 +73,47 @@ router
 							req.body.password,
 							parseInt(process.env.SALT_ROUND)
 					  )
-					: customerfound.password,
+					: employeefound.password,
 				phone: req.body.phone,
 				address: req.body.address,
+				salary: req.body.salary,
 			},
 			{ new: true },
 			function (err) {
 				if (!err) {
 					res.status(200).send(
-						"Successfully updated the selected Customer."
+						"Successfully updated the selected Employee."
 					);
 				} else {
 					res.status(404).json({
 						success: false,
 						error: err.message,
-						status: "A Customer cannot updated",
+						status: "A Employee cannot updated",
 					});
 				}
 			}
 		);
 	})
 	.delete(function (req, res) {
-		Customer.findOneAndDelete(
+		Employee.findOneAndDelete(
 			{ _id: req.params.id },
 			function (err, foundEmployee) {
 				if (!err) {
 					if (!foundEmployee) {
 						return res.status(404).json({
-							message: "Customer does not exist.",
+							message: "Employee does not exist.",
 						});
 					}
 					return res.status(200).json({
 						success: true,
-						message: "Successfully deleted a select Customer",
+						message: "Successfully deleted a select Employee",
 					});
 				} else {
 					return res.status(404).json({
 						sucess: false,
 						error: err.message,
-						message: "Invalid Customer ID",
-						status: "A Customer cannot deleted.",
+						message: "Invalid Employee ID",
+						status: "A Employee cannot deleted.",
 					});
 				}
 			}
@@ -120,14 +121,14 @@ router
 	});
 
 router.post("/login", function (req, res) {
-	Customer.findOne({ email: req.body.email }, function (err, foundCustomer) {
-		if (foundCustomer) {
-			if (bcrypt.compareSync(req.body.password, foundCustomer.password)) {
+	Employee.findOne({ email: req.body.email }, function (err, foundEmployee) {
+		if (foundEmployee) {
+			if (bcrypt.compareSync(req.body.password, foundEmployee.password)) {
 				const secret = process.env.SECRET;
 				const token = jwt.sign(
 					{
-						customerId: foundCustomer._id,
-						isCustomer: true,
+						customerId: foundEmployee._id,
+						isEmployee: true,
 					},
 					secret,
 					{
@@ -135,45 +136,37 @@ router.post("/login", function (req, res) {
 					}
 				);
 				return res.status(200).json({
-					user: foundCustomer.email,
+					user: foundEmployee.email,
 					token: token,
 				});
 			} else {
 				return res.status(400).json({ message: "Password is wrong!" });
 			}
 		}
-		return res.status(400).json({ message: "Email user not found" });
+		return res.status(400).json({ message: "Email Employee not found" });
 	});
 });
 
 router.post("/register", function (req, res) {
 	let salt = parseInt(process.env.SALT_ROUND);
 	let hashPassWord = bcrypt.hashSync(req.body.password, salt);
-	let newCustomer = new Customer({
+	let newEmployee = new Employee({
 		name: req.body.name,
 		email: req.body.email,
 		password: hashPassWord,
 		phone: req.body.phone,
 		address: req.body.address,
+		salary: req.body.salary,
 	});
-	newCustomer.save(function (err) {
+	newEmployee.save(function (err) {
 		if (!err) {
-			return res.status(200).send("Successful registration.");
+			return res.status(200).send("Successfully added a new Employee.");
 		} else {
 			return res.status(400).json({
 				success: false,
 				error: err.message,
-				status: "Registration failed.",
+				status: "A Employee cannot be created",
 			});
-		}
-	});
-});
-router.get("/get/count", function (req, res) {
-	Customer.countDocuments(function (err, count) {
-		if (!err) {
-			res.status(200).json({ customerCount: count });
-		} else {
-			res.send(err);
 		}
 	});
 });

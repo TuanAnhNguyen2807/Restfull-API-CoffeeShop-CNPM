@@ -7,6 +7,10 @@ const mongoose = require("mongoose");
 const productsRouter = require("./routers/products");
 const categoryRouter = require("./routers/categories");
 const customerRouter = require("./routers/customers");
+const employeeRouter = require("./routers/employees");
+const authJwt = require("./helpers/jwt");
+const errorHandle = require("./helpers/error-handle");
+
 const api = process.env.API_URL;
 const app = express();
 
@@ -16,8 +20,10 @@ app.use(
 		extended: true,
 	})
 );
-app.use(morgan("tiny"));
 app.use(cors());
+app.use(morgan("tiny"));
+app.use(authJwt());
+app.use(errorHandle);
 
 mongoose
 	.connect("mongodb://localhost:27017/coffeeShopDB")
@@ -33,7 +39,7 @@ mongoose
 app.use(`${api}/products`, productsRouter);
 app.use(`${api}/categories`, categoryRouter);
 app.use(`${api}/customers`, customerRouter);
-
+app.use(`${api}/employees`, employeeRouter);
 app.listen(3000, function () {
 	console.log("Server is running http://localhost:3000");
 });
