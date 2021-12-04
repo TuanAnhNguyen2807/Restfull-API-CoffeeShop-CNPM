@@ -49,22 +49,25 @@ router
 	});
 
 router
-	.route("/:id")
+	.route("/:customerId")
 	.get(function (req, res) {
-		Customer.findOne({ _id: req.params.id }, function (err, foundCustomer) {
-			if (foundCustomer) {
-				return res.send(foundCustomer);
+		Customer.findOne(
+			{ _id: req.params.customerId },
+			function (err, foundCustomer) {
+				if (foundCustomer) {
+					return res.send(foundCustomer);
+				}
+				return res.status(404).json({
+					success: false,
+					message: "A Customer with the given ID was not found",
+				});
 			}
-			return res.status(404).json({
-				success: false,
-				message: "A Customer with the given ID was not found",
-			});
-		}).select("-password");
+		).select("-password");
 	})
 	.put(async function (req, res) {
 		const customerfound = await Customer.findById(req.params.id);
 		Customer.findOneAndUpdate(
-			{ _id: req.params.id },
+			{ _id: req.params.customerId },
 			{
 				name: req.body.name,
 				email: req.body.email,
@@ -95,7 +98,7 @@ router
 	})
 	.delete(function (req, res) {
 		Customer.findOneAndDelete(
-			{ _id: req.params.id },
+			{ _id: req.params.customerId },
 			function (err, foundEmployee) {
 				if (!err) {
 					if (!foundEmployee) {

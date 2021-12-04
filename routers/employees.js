@@ -49,22 +49,25 @@ router
 		});
 	});
 router
-	.route("/:id")
+	.route("/:employeeId")
 	.get(function (req, res) {
-		Employee.findOne({ _id: req.params.id }, function (err, foundEmployee) {
-			if (foundEmployee) {
-				return res.send(foundEmployee);
+		Employee.findOne(
+			{ _id: req.params.employeeId },
+			function (err, foundEmployee) {
+				if (foundEmployee) {
+					return res.send(foundEmployee);
+				}
+				return res.status(404).json({
+					success: false,
+					message: "A Employee with the given ID was not found",
+				});
 			}
-			return res.status(404).json({
-				success: false,
-				message: "A Employee with the given ID was not found",
-			});
-		});
+		);
 	})
 	.put(async function (req, res) {
 		const employeefound = await Employee.findById(req.params.id);
 		Employee.findOneAndUpdate(
-			{ _id: req.params.id },
+			{ _id: req.params.employeeId },
 			{
 				name: req.body.name,
 				email: req.body.email,
@@ -96,7 +99,7 @@ router
 	})
 	.delete(function (req, res) {
 		Employee.findOneAndDelete(
-			{ _id: req.params.id },
+			{ _id: req.params.employeeId },
 			function (err, foundEmployee) {
 				if (!err) {
 					if (!foundEmployee) {
@@ -160,12 +163,12 @@ router.post("/register", function (req, res) {
 	});
 	newEmployee.save(function (err) {
 		if (!err) {
-			return res.status(200).send("Successfully added a new Employee.");
+			return res.status(200).send("Successful registration.");
 		} else {
 			return res.status(400).json({
 				success: false,
 				error: err.message,
-				status: "A Employee cannot be created",
+				status: "Registration failed.",
 			});
 		}
 	});

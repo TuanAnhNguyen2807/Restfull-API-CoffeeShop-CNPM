@@ -11,10 +11,11 @@ function authJwt() {
 		path: [
 			{ url: /\/api\/v1\/products(.*)/, method: ["GET", "OPTIONS"] },
 			{ url: /\/api\/v1\/categories(.*)/, method: ["GET", "OPTIONS"] },
+			{ url: /\/api\/v1\/orders(.*)/, method: ["GET", "OPTIONS"] },
 			`${api}/customers/login`,
 			`${api}/customers/register`,
 			`${api}/employees/login`,
-			`${api}/employees/login`,
+			`${api}/employees/register`,
 		],
 	});
 }

@@ -8,6 +8,7 @@ const productsRouter = require("./routers/products");
 const categoryRouter = require("./routers/categories");
 const customerRouter = require("./routers/customers");
 const employeeRouter = require("./routers/employees");
+const orderRouter = require("./routers/orders");
 const authJwt = require("./helpers/jwt");
 const errorHandle = require("./helpers/error-handle");
 
@@ -40,6 +41,7 @@ app.use(`${api}/products`, productsRouter);
 app.use(`${api}/categories`, categoryRouter);
 app.use(`${api}/customers`, customerRouter);
 app.use(`${api}/employees`, employeeRouter);
+app.use(`${api}/orders`, orderRouter);
 app.listen(3000, function () {
 	console.log("Server is running http://localhost:3000");
 });
