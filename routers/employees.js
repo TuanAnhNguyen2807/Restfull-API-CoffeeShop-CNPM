@@ -65,7 +65,13 @@ router
 		);
 	})
 	.put(async function (req, res) {
-		const employeefound = await Employee.findById(req.params.id);
+		const employeefound = await Employee.findById(req.params.employeeId);
+		if (!employeefound) {
+			return res.status(404).json({
+				success: false,
+				message: "Employee ID does not exist!",
+			});
+		}
 		Employee.findOneAndUpdate(
 			{ _id: req.params.employeeId },
 			{
@@ -130,16 +136,16 @@ router.post("/login", function (req, res) {
 				const secret = process.env.SECRET;
 				const token = jwt.sign(
 					{
-						customerId: foundEmployee._id,
+						employeeId: foundEmployee._id,
 						isEmployee: true,
 					},
 					secret,
 					{
-						expiresIn: "1w",
+						expiresIn: "1d",
 					}
 				);
 				return res.status(200).json({
-					user: foundEmployee.email,
+					email_employee: foundEmployee.email,
 					token: token,
 				});
 			} else {
@@ -170,6 +176,16 @@ router.post("/register", function (req, res) {
 				error: err.message,
 				status: "Registration failed.",
 			});
+		}
+	});
+});
+
+router.get("/get/count", function (req, res) {
+	Employee.countDocuments(function (err, count) {
+		if (!err) {
+			res.status(200).json({ employeeCount: count });
+		} else {
+			res.send(err);
 		}
 	});
 });

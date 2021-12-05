@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Order = require("../models/order");
 const OrderItem = require("../models/order-item");
+const Product = require("../models/product");
 
 router
 	.route("/")
@@ -153,8 +154,9 @@ router.get("/get/count", function (req, res) {
 });
 router.get("/get/customerorders/:customerId", async function (req, res) {
 	const cusOrderList = await Order.find({
-		user: req.params.customerId,
+		customer: req.params.customerId,
 	})
+		.populate("customer", "name")
 		.populate({
 			path: "orderItems",
 			populate: { path: "product", populate: "category" },

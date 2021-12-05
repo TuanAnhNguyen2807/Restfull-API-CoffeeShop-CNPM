@@ -65,7 +65,13 @@ router
 		).select("-password");
 	})
 	.put(async function (req, res) {
-		const customerfound = await Customer.findById(req.params.id);
+		const customerfound = await Customer.findById(req.params.customerId);
+		if (!customerfound) {
+			return res.status(404).json({
+				success: false,
+				message: "Customer ID does not exist!",
+			});
+		}
 		Customer.findOneAndUpdate(
 			{ _id: req.params.customerId },
 			{
@@ -134,11 +140,11 @@ router.post("/login", function (req, res) {
 					},
 					secret,
 					{
-						expiresIn: "1w",
+						expiresIn: "1d",
 					}
 				);
 				return res.status(200).json({
-					user: foundCustomer.email,
+					email_customer: foundCustomer.email,
 					token: token,
 				});
 			} else {
