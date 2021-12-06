@@ -1,8 +1,10 @@
 const express = require("express");
+const { error } = require("npmlog");
 const router = express.Router();
 const Order = require("../models/order");
 const OrderItem = require("../models/order-item");
 const Product = require("../models/product");
+const Customer = require("../models/customer");
 
 router
 	.route("/")
@@ -23,21 +25,35 @@ router
 			}
 		})
 			.populate("customer", "name")
-			.populate("orderItems")
+			.populate({
+				path: "orderItems",
+				populate: { path: "product", select: "name price" },
+			})
 			.sort({ dateOrdered: -1 });
 	})
 	.post(async function (req, res) {
 		const orderItemsIds = Promise.all(
 			req.body.orderItems.map(async (orderitem) => {
-				let newOrderItem = new OrderItem({
-					quantity: orderitem.quantity,
-					product: orderitem.product,
-				});
-				newOrderItem = await newOrderItem.save();
-				return newOrderItem._id;
+				const foundProduct = Product.findById(orderitem.product);
+				if (foundProduct) {
+					let newOrderItem = new OrderItem({
+						quantity: orderitem.quantity,
+						product: orderitem.product,
+					});
+					newOrderItem = await newOrderItem.save();
+					return newOrderItem._id;
+				}
 			})
-		);
+		).catch((err) => {
+			return -1;
+		});
 		const orderItemsIdsResolved = await orderItemsIds;
+		if (orderItemsIdsResolved === -1) {
+			return res.status(404).json({
+				error: "Invalid ID Product",
+				message: "Cannot create orders",
+			});
+		}
 		const totalPrices = await Promise.all(
 			orderItemsIdsResolved.map(async (orderItemId) => {
 				const orderItem = await (
@@ -48,26 +64,37 @@ router
 			})
 		);
 		const totalPrice = totalPrices.reduce((a, b) => a + b, 0);
-		let newOrder = new Order({
-			orderItems: orderItemsIdsResolved,
-			shippingAddress: req.body.shippingAddress,
-			address: req.body.address,
-			status: req.body.status,
-			totalPrice: totalPrice,
-			customer: req.body.customer,
-			dateOrdered: req.body.dateOrdered,
-		});
-		newOrder.save(function (err) {
-			if (!err) {
-				return res.status(200).send("Successfully added a new Order.");
-			} else {
-				return res.status(400).json({
-					success: false,
-					error: err.message,
-					status: "The Order cannot be created",
+		const foundCustomer = await Customer.findById(req.body.customer)
+			.then((foundCustomer) => {
+				let newOrder = new Order({
+					orderItems: orderItemsIdsResolved,
+					shippingAddress: req.body.shippingAddress,
+					address: req.body.address,
+					status: req.body.status,
+					totalPrice: totalPrice,
+					customer: req.body.customer,
+					dateOrdered: req.body.dateOrdered,
 				});
-			}
-		});
+				newOrder.save(function (err) {
+					if (!err) {
+						return res
+							.status(200)
+							.send("Successfully added a new Order.");
+					} else {
+						return res.status(400).json({
+							success: false,
+							error: err.message,
+							status: "The Order cannot be created",
+						});
+					}
+				});
+			})
+			.catch((err) => {
+				return res.status(400).json({
+					error: err.message,
+					message: "Cannot create orders",
+				});
+			});
 	});
 
 router
