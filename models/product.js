@@ -9,15 +9,7 @@ const productSchema = new mongoose.Schema({
 		type: String,
 		default: "",
 	},
-	image: {
-		type: String,
-		default: "",
-	},
-	images: [
-		{
-			type: String,
-		},
-	],
+	images: [String],
 	price: {
 		type: Number,
 		default: 0,
@@ -26,13 +18,9 @@ const productSchema = new mongoose.Schema({
 		type: mongoose.Schema.Types.ObjectId,
 		ref: "Category",
 	},
-	rating: {
-		type: Number,
-		default: 0,
-	},
 	isFeatured: {
 		type: Boolean,
-		default: false,
+		default: true,
 	},
 	dateCreated: {
 		type: Date,
