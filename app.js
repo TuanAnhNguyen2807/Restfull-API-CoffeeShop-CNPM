@@ -27,7 +27,7 @@ app.use(authJwt());
 app.use(errorHandle);
 
 mongoose
-	.connect("mongodb://localhost:27017/coffeeShopDB")
+	.connect("mongodb+srv://user:user@learningmongo1.89tk5.gcp.mongodb.net/coffeeShopDB?retryWrites=true")
 	.then(() => {
 		console.log("Database Connection is ready...");
 	})
@@ -42,6 +42,6 @@ app.use(`${api}/categories`, categoryRouter);
 app.use(`${api}/customers`, customerRouter);
 app.use(`${api}/employees`, employeeRouter);
 app.use(`${api}/orders`, orderRouter);
-app.listen(3000, function () {
-	console.log("Server is running http://localhost:3000");
+app.listen(8000, function () {
+	console.log("Server is running http://localhost:8000");
 });
