@@ -27,6 +27,11 @@ const employeeSchema = new mongoose.Schema({
 		type: Number,
 		default: 0,
 	},
+	role: {
+		type: String,
+		enum: ["admin", "manager", "employee"],
+		default: "employee"
+	}
 });
 employeeSchema.plugin(uniqueValidator);
 const Employee = mongoose.model("Employee", employeeSchema);

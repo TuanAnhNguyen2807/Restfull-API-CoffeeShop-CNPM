@@ -11,20 +11,21 @@ function authJwt() {
 		path: [
 			{ url: /\/api\/v1\/products(.*)/, method: ["GET", "OPTIONS"] },
 			{ url: /\/api\/v1\/categories(.*)/, method: ["GET", "OPTIONS"] },
-			{ url: /\/api\/v1\/orders(.*)/, method: ["GET", "OPTIONS"] },
+			// { url: /\/api\/v1\/orders(.*)/, method: ["GET", "OPTIONS"] },
 			`${api}/customers/login`,
 			`${api}/customers/register`,
 			`${api}/employees/login`,
-			`${api}/employees/register`,
+			// `${api}/employees/register`,
 		],
 	});
 }
 
 async function isRevoked(req, payload, done) {
-	if (payload.isCustomer) {
-		done(null, true);
+	req.locals = {payload: payload}
+	if (payload.isEmployee) {
+		done();
 	}
-	done();
+	done(null, true);
 }
 
 module.exports = authJwt;

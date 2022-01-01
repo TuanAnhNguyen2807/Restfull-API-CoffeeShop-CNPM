@@ -3,6 +3,7 @@ const router = express.Router();
 const Employee = require("../models/employee");
 const bcrypt = require("bcrypt");
 var jwt = require("jsonwebtoken");
+const {isAdmin, isManager, isEmployee} = require("../helpers/role")
 
 router
 	.route("/")
@@ -48,6 +49,71 @@ router
 			}
 		});
 	});
+	
+router.post("/login", function (req, res) {
+	Employee.findOne({ email: req.body.email }, function (err, foundEmployee) {
+		if (foundEmployee) {
+			if (bcrypt.compareSync(req.body.password, foundEmployee.password)) {
+				const secret = process.env.SECRET;
+				const token = jwt.sign(
+					{
+						employeeId: foundEmployee._id,
+						role: foundEmployee.role,
+						isEmployee: true
+					},
+					secret,
+					{
+						expiresIn: "1d",
+					}
+				);
+				return res.status(200).json({
+					email_employee: foundEmployee.email,
+					name: foundEmployee.name,
+					token: token,
+				});
+			} else {
+				return res.status(400).json({ message: "Password is wrong!" });
+			}
+		}
+		return res.status(400).json({ message: "Email Employee not found" });
+	});
+});
+
+router.post("/register", function (req, res) {
+	let salt = parseInt(process.env.SALT_ROUND);
+	let hashPassWord = bcrypt.hashSync(req.body.password, salt);
+	let newEmployee = new Employee({
+		name: req.body.name,
+		email: req.body.email,
+		password: hashPassWord,
+		phone: req.body.phone,
+		address: req.body.address,
+		salary: req.body.salary,
+	});
+	newEmployee.save(function (err) {
+		if (!err) {
+			return res.status(200).send("Successful registration.");
+		} else {
+			return res.status(400).json({
+				status: false,
+				error: err.message,
+				status: "Registration failed.",
+			});
+		}
+	});
+});
+
+router.get("/get/count", function (req, res) {
+	Employee.countDocuments(function (err, count) {
+		if (!err) {
+			res.status(200).json({ employeeCount: count });
+		} else {
+			res.send(err);
+		}
+	});
+});
+
+
 router
 	.route("/:employeeId")
 	.get(function (req, res) {
@@ -129,65 +195,5 @@ router
 		);
 	});
 
-router.post("/login", function (req, res) {
-	Employee.findOne({ email: req.body.email }, function (err, foundEmployee) {
-		if (foundEmployee) {
-			if (bcrypt.compareSync(req.body.password, foundEmployee.password)) {
-				const secret = process.env.SECRET;
-				const token = jwt.sign(
-					{
-						employeeId: foundEmployee._id,
-						isEmployee: true,
-					},
-					secret,
-					{
-						expiresIn: "1d",
-					}
-				);
-				return res.status(200).json({
-					email_employee: foundEmployee.email,
-					token: token,
-				});
-			} else {
-				return res.status(400).json({ message: "Password is wrong!" });
-			}
-		}
-		return res.status(400).json({ message: "Email Employee not found" });
-	});
-});
-
-router.post("/register", function (req, res) {
-	let salt = parseInt(process.env.SALT_ROUND);
-	let hashPassWord = bcrypt.hashSync(req.body.password, salt);
-	let newEmployee = new Employee({
-		name: req.body.name,
-		email: req.body.email,
-		password: hashPassWord,
-		phone: req.body.phone,
-		address: req.body.address,
-		salary: req.body.salary,
-	});
-	newEmployee.save(function (err) {
-		if (!err) {
-			return res.status(200).send("Successful registration.");
-		} else {
-			return res.status(400).json({
-				success: false,
-				error: err.message,
-				status: "Registration failed.",
-			});
-		}
-	});
-});
-
-router.get("/get/count", function (req, res) {
-	Employee.countDocuments(function (err, count) {
-		if (!err) {
-			res.status(200).json({ employeeCount: count });
-		} else {
-			res.send(err);
-		}
-	});
-});
 
 module.exports = router;
