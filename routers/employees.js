@@ -22,7 +22,7 @@ router
 					error: err,
 				});
 			}
-		});
+		}).select("-__v -password");
 	})
 	.post(function (req, res) {
 		let salt = parseInt(process.env.SALT_ROUND);
@@ -103,7 +103,7 @@ router.post("/register", function (req, res) {
 	});
 });
 
-router.get("/get/count", function (req, res) {
+router.get("/count", function (req, res) {
 	Employee.countDocuments(function (err, count) {
 		if (!err) {
 			res.status(200).json({ employeeCount: count });
@@ -128,7 +128,7 @@ router
 					message: "A Employee with the given ID was not found",
 				});
 			}
-		);
+		).select("-__v -password");
 	})
 	.put(async function (req, res) {
 		const employeefound = await Employee.findById(req.params.employeeId);
