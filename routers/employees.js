@@ -7,7 +7,7 @@ const {isAdmin, isManager, isEmployee} = require("../helpers/role")
 
 router
 	.route("/")
-	.get(function (req, res) {
+	.get(isManager, function (req, res) {
 		Employee.find(function (err, foundEmployeeList) {
 			if (!err) {
 				if (foundEmployeeList.length === 0) {
@@ -24,7 +24,7 @@ router
 			}
 		}).select("-__v -password");
 	})
-	.post(function (req, res) {
+	.post(isManager, function (req, res) {
 		let salt = parseInt(process.env.SALT_ROUND);
 		let hashPassWord = bcrypt.hashSync(req.body.password, salt);
 		let newEmployee = new Employee({
@@ -67,8 +67,8 @@ router.post("/login", function (req, res) {
 					}
 				);
 				return res.status(200).json({
-					email_employee: foundEmployee.email,
 					name: foundEmployee.name,
+					role: foundEmployee.role,
 					token: token,
 				});
 			} else {
@@ -76,30 +76,6 @@ router.post("/login", function (req, res) {
 			}
 		}
 		return res.status(400).json({ message: "Email Employee not found" });
-	});
-});
-
-router.post("/register", function (req, res) {
-	let salt = parseInt(process.env.SALT_ROUND);
-	let hashPassWord = bcrypt.hashSync(req.body.password, salt);
-	let newEmployee = new Employee({
-		name: req.body.name,
-		email: req.body.email,
-		password: hashPassWord,
-		phone: req.body.phone,
-		address: req.body.address,
-		salary: req.body.salary,
-	});
-	newEmployee.save(function (err) {
-		if (!err) {
-			return res.status(200).send("Successful registration.");
-		} else {
-			return res.status(400).json({
-				status: false,
-				error: err.message,
-				status: "Registration failed.",
-			});
-		}
 	});
 });
 
@@ -113,10 +89,9 @@ router.get("/count", function (req, res) {
 	});
 });
 
-
 router
 	.route("/:employeeId")
-	.get(function (req, res) {
+	.get(isEmployee, function (req, res) {
 		Employee.findOne(
 			{ _id: req.params.employeeId },
 			function (err, foundEmployee) {
@@ -130,7 +105,7 @@ router
 			}
 		).select("-__v -password");
 	})
-	.put(async function (req, res) {
+	.put(isEmployee, async function (req, res) {
 		const employeefound = await Employee.findById(req.params.employeeId);
 		if (!employeefound) {
 			return res.status(404).json({
@@ -169,7 +144,7 @@ router
 			}
 		);
 	})
-	.delete(function (req, res) {
+	.delete(isManager, function (req, res) {
 		Employee.findOneAndDelete(
 			{ _id: req.params.employeeId },
 			function (err, foundEmployee) {
