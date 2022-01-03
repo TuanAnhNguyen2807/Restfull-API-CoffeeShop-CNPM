@@ -9,37 +9,45 @@ const Customer = require("../models/customer");
 router
 	.route("/")
 	.get(function (req, res) {
-		Order.find(function (err, foundOrderList) {
-			if (!err) {
-				if (foundOrderList.length === 0) {
-					return res.status(200).json({
-						message: "Empty Orders",
-					});
-				}
-				return res.send(foundOrderList);
-			} else {
-				return res.status(500).json({
-					isSuccess: false,
-					error: err,
-				});
-			}
-		})
-			.populate("customer", "name")
-			.populate({
-				path: "orderItems",
-				populate: {
-					path: "product",
+		let page = req.query.page ? Number(req.query.page) : 1,
+			limit = req.query.limit ? Number(req.query.limit) : 20
+		page < 1 || isNaN(page) ? page = 1 : null
+		limit < 1 || isNaN(limit) ? limit = 20 : null
+
+		Promise.all([
+			Order.find()
+				.sort({ role: 1 })
+				.select({ __v: false, password: false })
+				.limit(limit)
+				.skip((page - 1) * limit)
+				.populate("customer", "name")
+				.populate({
+					path: "orderItems",
 					populate: {
-						path: "category",
-						select: "name"
+						path: "product",
+						populate: {
+							path: "category",
+							select: "name"
+						},
+						select: "_id name price"
 					},
-					select: "_id name price"
-				},
-				select: "-__v"
-			})
-			.populate("employee", "name role")
-			.sort({ dateOrdered: -1 })
-			.select("-__v")
+					select: "-__v"
+				})
+				.populate("employee", "name role")
+				.sort({ dateOrdered: -1 })
+				.select("-__v"),
+			Order.count()
+		])
+			.then(([data, total]) => res.json({
+				currentPage: page,
+				limit: limit,
+				totalPage: total % limit != 0 ? parseInt(total / limit + 1) : total / limit,
+				data: data
+			}))
+			.catch(err => res.status(500).json({
+				isSuccess: false,
+				error: err,
+			}))
 	})
 	.post(async function (req, res) {
 		const orderItemsIds = Promise.all(
@@ -107,6 +115,75 @@ router
 			});
 	});
 
+router.get("/totalsales", async function (req, res) {
+	let { startDate, endDate } = req.body
+	const totalSales = await Order.aggregate([
+		{
+			$match: {
+				dateOrdered: {
+					$gte: new Date(startDate),
+					$lte: new Date(endDate)
+				}
+			}
+		},
+		{
+			$group: {
+				_id: null,
+				totalsales: {
+					$sum: "$totalPrice"
+				},
+				totalOrders: {
+					$sum: 1
+				}
+			}
+		}
+	]);
+	result = totalSales.pop()
+	if (!result) {
+		return res.status(400).send("The order sales cannot be generated");
+	}
+	return res.json({ 
+		startDate: startDate,
+		endDate: endDate,
+		totalsales: result.totalsales,
+		totalOrders: result.totalOrders
+	});
+});
+router.get("/count", function (req, res) {
+	Order.countDocuments(function (err, count) {
+		if (!err) {
+			res.status(200).json({ orderCount: count });
+		} else {
+			res.send(err);
+		}
+	});
+});
+router.get("/customer/:customerId", async function (req, res) {
+	const cusOrderList = await Order.find({
+		customer: req.params.customerId,
+	})
+		.populate("customer", "name")
+		.populate({
+			path: "orderItems",
+			populate: {
+				path: "product",
+				populate: {
+					path: "category",
+					select: "name"
+				},
+				select: "_id name price"
+			},
+			select: "-__v"
+		})
+		.populate("employee", "name role")
+		.select("-__v")
+		.sort({ dateOrdered: -1 });
+	if (!cusOrderList) {
+		return res.status(500).json({ success: false });
+	}
+	return res.send(cusOrderList);
+});
+
 router
 	.route("/:orderId")
 	.get(function (req, res) {
@@ -124,7 +201,6 @@ router
 				},
 				select: "-__v"
 			})
-			.populate("employee", "name")
 			.populate("employee", "name role")
 			.then(foundOrder => res.send(foundOrder))
 			.catch(err => res.status(404).json({
@@ -177,49 +253,5 @@ router
 				return res.status(500).json({ success: false, error: err });
 			});
 	});
-
-router.get("/totalsales", async function (req, res) {
-	const totalSales = await Order.aggregate([
-		{ $group: { _id: null, totalsales: { $sum: "$totalPrice" } } },
-	]);
-	if (!totalSales) {
-		return res.status(400).send("The order sales cannot be generated");
-	}
-	return res.send({ totalsales: totalSales.pop().totalsales });
-});
-router.get("/count", function (req, res) {
-	Order.countDocuments(function (err, count) {
-		if (!err) {
-			res.status(200).json({ orderCount: count });
-		} else {
-			res.send(err);
-		}
-	});
-});
-router.get("/customer/:customerId", async function (req, res) {
-	const cusOrderList = await Order.find({
-		customer: req.params.customerId,
-	})
-		.populate("customer", "name")
-		.populate({
-			path: "orderItems",
-			populate: {
-				path: "product",
-				populate: {
-					path: "category",
-					select: "name"
-				},
-				select: "_id name price"
-			},
-			select: "-__v"
-		})
-		.populate("employee", "name role")
-		.select("-__v")
-		.sort({ dateOrdered: -1 });
-	if (!cusOrderList) {
-		return res.status(500).json({ success: false });
-	}
-	return res.send(cusOrderList);
-});
 
 module.exports = router;
