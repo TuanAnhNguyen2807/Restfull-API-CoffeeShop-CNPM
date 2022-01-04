@@ -165,29 +165,45 @@ router.get("/count", function (req, res) {
 	});
 });
 router.get("/customer/:customerId", async function (req, res) {
-	const cusOrderList = await Order.find({
-		customer: req.params.customerId,
-	})
-		.populate("customer", "name")
-		.populate({
-			path: "orderItems",
-			populate: {
-				path: "product",
+	let page = req.query.page ? Number(req.query.page) : 1,
+		limit = req.query.limit ? Number(req.query.limit) : 20
+	page < 1 || isNaN(page) ? page = 1 : null
+	limit < 1 || isNaN(limit) ? limit = 20 : null
+
+	Promise.all([
+		Order.find({customer: req.params.customerId})
+			.sort({ role: 1 })
+			.select({ __v: false, password: false })
+			.limit(limit)
+			.skip((page - 1) * limit)
+			.populate("customer", "name")
+			.populate({
+				path: "orderItems",
 				populate: {
-					path: "category",
-					select: "name"
+					path: "product",
+					populate: {
+						path: "category",
+						select: "name"
+					},
+					select: "_id name price"
 				},
-				select: "_id name price"
-			},
-			select: "-__v"
-		})
-		.populate("employee", "name role")
-		.select("-__v")
-		.sort({ dateOrdered: -1 });
-	if (!cusOrderList) {
-		return res.status(500).json({ success: false });
-	}
-	return res.send(cusOrderList);
+				select: "-__v"
+			})
+			.populate("employee", "name role")
+			.sort({ dateOrdered: -1 })
+			.select("-__v"),
+		Order.count()
+	])
+		.then(([data, total]) => res.json({
+			currentPage: page,
+			limit: limit,
+			totalPage: total % limit != 0 ? parseInt(total / limit + 1) : total / limit,
+			data: data
+		}))
+		.catch(err => res.status(500).json({
+			isSuccess: false,
+			error: err,
+		}))
 });
 
 router
