@@ -82,37 +82,43 @@ router
 			})
 		);
 		const totalPrice = totalPrices.reduce((a, b) => a + b, 0);
-		const foundCustomer = await Customer.findById(req.body.customer)
-			.then((foundCustomer) => {
-				let newOrder = new Order({
-					orderItems: orderItemsIdsResolved,
-					shippingAddress: req.body.shippingAddress,
-					address: req.body.address,
-					status: req.body.status,
-					totalPrice: totalPrice,
-					customer: req.body.customer,
-					employee: req.locals.payload.employeeId,
-				});
-				newOrder.save(function (err) {
-					if (!err) {
-						return res
-							.status(200)
-							.send("Successfully added a new Order.");
-					} else {
-						return res.status(400).json({
-							success: false,
-							error: err.message,
-							status: "The Order cannot be created",
-						});
-					}
+		let newOrder = new Order({
+			orderItems: orderItemsIdsResolved,
+			shippingAddress: req.body.shippingAddress,
+			address: req.body.address,
+			status: req.body.status,
+			totalPrice: totalPrice,
+			customer: req.body.customer,
+			employee: req.locals.payload.employeeId,
+		});
+		newOrder.save()
+			.then(() => {
+				Order.findById(newOrder._id)
+					.select({ __v: false, password: false })
+					.populate("customer", "name")
+					.populate({
+						path: "orderItems",
+						populate: {
+							path: "product",
+							populate: {
+								path: "category",
+								select: "name"
+							},
+							select: "_id name price"
+						},
+						select: "-__v"
+					})
+					.populate("employee", "name role")
+					.select("-__v")
+					.then(doc => res.json(doc))
+			})
+			.catch(e => {
+				res.status(400).json({
+					success: false,
+					error: e.message,
+					status: "The Order cannot be created",
 				});
 			})
-			.catch((err) => {
-				return res.status(400).json({
-					error: err.message,
-					message: "Cannot create orders",
-				});
-			});
 	});
 
 router.get("/totalsales", async function (req, res) {
@@ -142,7 +148,7 @@ router.get("/totalsales", async function (req, res) {
 	if (!result) {
 		return res.status(400).send("The order sales cannot be generated");
 	}
-	return res.json({ 
+	return res.json({
 		startDate: startDate,
 		endDate: endDate,
 		totalsales: result.totalsales,
