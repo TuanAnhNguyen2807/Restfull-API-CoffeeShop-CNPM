@@ -192,7 +192,7 @@ router.get("/customer/:customerId", async function (req, res) {
 			.populate("employee", "name role")
 			.sort({ dateOrdered: -1 })
 			.select("-__v"),
-		Order.count()
+		Order.count({_id: req.params.customerId })
 	])
 		.then(([data, total]) => res.json({
 			currentPage: page,
