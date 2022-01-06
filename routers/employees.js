@@ -170,5 +170,17 @@ router
 		);
 	});
 
+router.post("/changepassword", isEmployee, (req,res)=>{
+	try {
+		let salt = parseInt(process.env.SALT_ROUND);
+		let hashPassWord = bcrypt.hashSync(req.body.password, salt);
+		Employee.findByIdAndUpdate(req.locals.payload.employeeId, {password: hashPassWord}).then(doc=>{
+			res.json({msg: "Change password success", name: doc.name})
+		})
+	} catch (error) {
+		res.status(500).json({err: "Unexpected error"})
+	}
+})
+
 
 module.exports = router;

@@ -48,7 +48,7 @@ router
 		});
 	});
 
-router.get("/search", async (req,res)=>{
+router.post("/search", async (req,res)=>{
 	try {
 		let result = await Customer.find({$text: {$search: req.body.text}}).select("-__v -password")
 		res.json(result)
