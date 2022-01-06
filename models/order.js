@@ -10,11 +10,9 @@ const orderSchema = new mongoose.Schema({
 	],
 	shippingAddress: {
 		type: String,
-		require: true,
 	},
 	address: {
 		type: String,
-		require: true,
 	},
 	status: {
 		type: String,
@@ -23,10 +21,15 @@ const orderSchema = new mongoose.Schema({
 	},
 	totalPrice: {
 		type: Number,
+		required: true
 	},
 	customer: {
 		type: mongoose.Schema.Types.ObjectId,
 		ref: "Customer",
+	},
+	employee: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "Employee"
 	},
 	dateOrdered: {
 		type: Date,

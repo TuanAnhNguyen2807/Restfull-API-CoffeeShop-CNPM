@@ -48,6 +48,16 @@ router
 		});
 	});
 
+router.post("/search", async (req,res)=>{
+	try {
+		let result = await Customer.find({$text: {$search: req.body.text}}).select("-__v -password")
+		res.json(result)
+	} catch (error) {
+		console.log(error)
+		res.status(400).json({err: error})
+	}
+})
+
 router
 	.route("/:customerId")
 	.get(function (req, res) {

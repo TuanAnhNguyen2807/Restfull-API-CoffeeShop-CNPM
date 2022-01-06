@@ -25,6 +25,7 @@ const customerSchema = new mongoose.Schema({
 	},
 });
 customerSchema.plugin(uniqueValidator);
+customerSchema.index({'$**': 'text'});
 const Customer = mongoose.model("Customer", customerSchema);
 
 module.exports = Customer;
